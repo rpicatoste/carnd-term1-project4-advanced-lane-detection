@@ -5,9 +5,82 @@ import glob
 import matplotlib.pyplot as plt
 import pickle
 
+# Parameters to select ROI as fraction of the image.
+imshape_used = (720, 1280, 3)
+
+top_lateral_diff = 579
+
+pts_src = np.array([ [200,   720],
+                     [top_lateral_diff,   460], 
+                     [imshape_used[1]-top_lateral_diff,   460], 
+                     [1080,  720]],np.float32)
+        
+pts_dst = np.array([[200,  720],
+                    [200, 0],
+                    [1080,  0],
+                    [1080, 720] ],np.float32)
+
+nx = 9 # the number of inside corners in x
+ny = 6 # the number of inside corners in y
+
+def sample_to_find_transformation_points():
+    
+    # Get camera matrices
+    camera_dict = pickle.load( open('camera_calibration.p', mode='rb') )
+    mtx = camera_dict["mtx"] 
+    dist = camera_dict["dist"] 
+
+    image_files = [r'.\CarND-Advanced-Lane-Lines\test_images\straight_lines1.jpg',
+                  r'.\CarND-Advanced-Lane-Lines\test_images\straight_lines2.jpg']
+    
+    for image_file in image_files:
+        image = cv2.imread( image_file )
+        image = cv2.cvtColor( image, cv2.COLOR_BGR2RGB )
+        
+        imshape = imshape_used
+            
+        # undistort and unwarp
+        image = cv2.undistort(image, mtx, dist, None, mtx)
+        M = cv2.getPerspectiveTransform(pts_src, pts_dst)
+        warped = cv2.warpPerspective(image, M,  (imshape[1], imshape[0]), flags=cv2.INTER_LINEAR)
+        
+        image = cv2.circle(image, tuple(pts_src[0]), 10, color = [255,0,0], thickness = -1)
+        image = cv2.circle(image, tuple(pts_src[1]), 10, color = [0,0,255], thickness = -1)
+        image = cv2.circle(image, tuple(pts_src[2]), 10, color = [0,255,0], thickness = -1)
+        image = cv2.circle(image, tuple(pts_src[3]), 10, color = [255,255,0], thickness = -1)
+        
+        warped = cv2.circle(warped, tuple(pts_dst[0]), 10, color = [255,0,0], thickness = -1)
+        warped = cv2.circle(warped, tuple(pts_dst[1]), 10, color = [0,0,255], thickness = -1)
+        warped = cv2.circle(warped, tuple(pts_dst[2]), 10, color = [0,255,0], thickness = -1)
+        warped = cv2.circle(warped, tuple(pts_dst[3]), 10, color = [255,255,0], thickness = -1)
+        
+        f, (ax1, ax2) = plt.subplots(1,2, figsize=(12, 8))
+        f.tight_layout()
+        ax1.imshow(image)
+        ax1.set_title('Original Image')
+        ax2.imshow(warped)
+        ax2.set_title('Warped')
+       
+def get_camera_matrices_and_perspective_transform():
+    camera_dict = pickle.load( open('camera_calibration.p', mode='rb') )
+    mtx = camera_dict["mtx"] 
+    dist = camera_dict["dist"] 
+    M = cv2.getPerspectiveTransform(pts_src, pts_dst)
+    
+    return mtx, dist, M
+    
+    
+def undistort_and_warp( image, mtx = None, dist = None, M = None):    
+    # Get camera matrices
+    if (mtx is None) or (dist is None) or (M is None):
+        mtx, dist, M = get_camera_matrices_and_perspective_transform()
+    
+    image = cv2.undistort(image, mtx, dist, None, mtx)
+    warped = cv2.warpPerspective(image, M,  (image.shape[1], image.shape[0]), flags=cv2.INTER_LINEAR)
+    
+    return warped        
+    
 def calibrate_camera():
-    nx = 9 # the number of inside corners in x
-    ny = 6 # the number of inside corners in y
     
     
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
@@ -94,8 +167,6 @@ def calibrate_camera():
 
 
 
-# MODIFY THIS FUNCTION TO GENERATE OUTPUT 
-# THAT LOOKS LIKE THE IMAGE ABOVE
 def corners_unwarp(img, nx, ny, mtx, dist):
     # Pass in your image into this function
     # Write code to do the following steps
@@ -162,4 +233,6 @@ def corners_unwarp(img, nx, ny, mtx, dist):
     return warped, M
 
 if __name__ == '__main__':
-    calibrate_camera()
+#    calibrate_camera()
+
+    sample_to_find_transformation_points()
