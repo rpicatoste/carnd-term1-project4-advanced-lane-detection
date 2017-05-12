@@ -19,7 +19,7 @@ def test_functions():
     # undistort and unwarp
     warped = cc.undistort_and_warp(image)
       
-    warped_binary = cg.pipeline(warped, s_thresh = (150, 255), l_thresh = (210, 255), plot_layers = False )
+    warped_binary = cg.pipeline_filter_to_binary(warped, s_thresh = (150, 255), l_thresh = (210, 255), plot_layers = False )
     
     f, (ax1, ax2) = plt.subplots(1,2, figsize=(12, 8))
     f.tight_layout()
@@ -28,7 +28,7 @@ def test_functions():
     ax2.imshow(warped_binary, cmap = 'gray')
     ax2.set_title('Mixed')
 
-    y, left_x, left_y = fit_lane_to_binary_image( warped_binary, plot_figure = True )
+    y, left_x, left_y, _, _ = fit_lane_to_binary_image( warped_binary, plot_figure = True )
     
     left_rad, right_rad = get_curvature(y, left_x, left_y)
     
@@ -37,18 +37,15 @@ def test_functions():
 
 
 
-def fit_lane_to_binary_image( warped_binary, plot_figure = False ):
-
-    warped = warped_binary.astype(np.uint8)
+def fit_lane_to_binary_image( binary_warped, plot_figure = False ):
     
-    binary_warped = np.zeros_like(warped)
-    binary_warped[warped_binary] = 1
+    binary_warped = binary_warped.astype(np.uint8)
     
-    # Assuming you have created a warped binary image called "binary_warped"
-    # Take a histogram of the bottom half of the image
-    histogram = np.sum(binary_warped[binary_warped.shape[0]//2:,:], axis=0)
     # Create an output image to draw on and  visualize the result
     out_img = np.dstack((binary_warped, binary_warped, binary_warped))*255
+
+    # Take a histogram of the bottom half of the image
+    histogram = np.sum( binary_warped[binary_warped.shape[0]//2:,:], axis = 0 )
     # Find the peak of the left and right halves of the histogram
     # These will be the starting point for the left and right lines
     midpoint = np.int(histogram.shape[0]/2)
@@ -121,25 +118,36 @@ def fit_lane_to_binary_image( warped_binary, plot_figure = False ):
     out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
     out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
     
-    plt.figure()
-    plt.imshow(out_img)
-    plt.plot(left_fitx, ploty, color='yellow')
-    plt.plot(right_fitx, ploty, color='yellow')
-    plt.xlim(0, 1280)
-    plt.ylim(720, 0)
+    if plot_figure:
+        plt.figure()
+        plt.imshow(out_img)
+        plt.plot(left_fitx, ploty, color='yellow')
+        plt.plot(right_fitx, ploty, color='yellow')
+        plt.xlim(0, 1280)
+        plt.ylim(720, 0)
     
+    return ploty, left_fitx, right_fitx, left_fit, right_fit
     
     #%% 2nd stage
     # Assume you now have a new warped binary image 
     # from the next frame of video (also called "binary_warped")
     # It's now much easier to find line pixels!
+def fit_lane_to_binary_image_from_previos_fit(warped_binary, left_fit, right_fit, plot_figure = False ):
+    
+    warped = warped_binary.astype(np.uint8)
+    
+    binary_warped = np.zeros_like(warped)
+    binary_warped[warped_binary] = 1
+    
     nonzero = binary_warped.nonzero()
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
     margin = 100
+    
     left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy**2) + left_fit[1]*nonzeroy + left_fit[2] - margin)) & (nonzerox < (left_fit[0]*(nonzeroy**2) + left_fit[1]*nonzeroy + left_fit[2] + margin))) 
     right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy**2) + right_fit[1]*nonzeroy + right_fit[2] - margin)) & (nonzerox < (right_fit[0]*(nonzeroy**2) + right_fit[1]*nonzeroy + right_fit[2] + margin)))  
     
+        
     # Again, extract left and right line pixel positions
     leftx = nonzerox[left_lane_inds]
     lefty = nonzeroy[left_lane_inds] 
@@ -148,6 +156,8 @@ def fit_lane_to_binary_image( warped_binary, plot_figure = False ):
     # Fit a second order polynomial to each
     left_fit = np.polyfit(lefty, leftx, 2)
     right_fit = np.polyfit(righty, rightx, 2)
+    
+
     # Generate x and y values for plotting
     ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
     left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
@@ -171,14 +181,17 @@ def fit_lane_to_binary_image( warped_binary, plot_figure = False ):
     right_line_pts = np.hstack((right_line_window1, right_line_window2))
     
     # Draw the lane onto the warped blank image
-    cv2.fillPoly(window_img, np.int_([left_line_pts]), (0,255, 0))
-    cv2.fillPoly(window_img, np.int_([right_line_pts]), (0,255, 0))
-    result = cv2.addWeighted(out_img, 1, window_img, 0.3, 0)
-    plt.imshow(result)
-    plt.plot(left_fitx, ploty, color='yellow')
-    plt.plot(right_fitx, ploty, color='yellow')
-    plt.xlim(0, 1280)
-    plt.ylim(720, 0)
+    if plot_figure:
+        cv2.fillPoly(window_img, np.int_([left_line_pts]), (0,255, 0))
+        cv2.fillPoly(window_img, np.int_([right_line_pts]), (0,255, 0))
+        result = cv2.addWeighted(out_img, 1, window_img, 0.3, 0)
+        
+        plt.figure()
+        plt.imshow(result)
+        plt.plot(left_fitx, ploty, color='yellow')
+        plt.plot(right_fitx, ploty, color='yellow')
+        plt.xlim(0, 1280)
+        plt.ylim(720, 0)
 
     return ploty, left_fitx, right_fitx
 
@@ -198,14 +211,15 @@ def get_curvature(ploty, leftx, rightx):
     
     # Plot up the fake data
     mark_size = 3
-    plt.plot(leftx, ploty, 'o', color='red', markersize=mark_size)
-    plt.plot(rightx, ploty, 'o', color='blue', markersize=mark_size)
-    plt.xlim(0, 1280)
-    plt.ylim(0, 720)
-    plt.plot(left_fitx, ploty, color='green', linewidth=3)
-    plt.plot(right_fitx, ploty, color='green', linewidth=3)
-    plt.gca().invert_yaxis() # to visualize as we do the images
     
+#    plt.plot(leftx, ploty, 'o', color='red', markersize=mark_size)
+#    plt.plot(rightx, ploty, 'o', color='blue', markersize=mark_size)
+#    plt.xlim(0, 1280)
+#    plt.ylim(0, 720)
+#    plt.plot(left_fitx, ploty, color='green', linewidth=3)
+#    plt.plot(right_fitx, ploty, color='green', linewidth=3)
+#    plt.gca().invert_yaxis() # to visualize as we do the images
+#    
     
     
     # Define y-value where we want radius of curvature
@@ -232,6 +246,22 @@ def get_curvature(ploty, leftx, rightx):
     # Example values: 632.1 m    626.2 m
     return left_curverad_m, right_curverad_m
     
+
+
+def fill_found_lanes_in_original( image, y, left_x, left_y):
+    # Recast the x and y points into usable format for cv2.fillPoly()
+    pts_left = np.array([np.transpose(np.vstack([left_x, y]))])
+    pts_right = np.array([np.flipud(np.transpose(np.vstack([left_y, y])))])
+    poly_points = np.hstack((pts_left, pts_right))
+    
+    warped_grays = np.zeros_like( image )
+    #warped_grays = np.dstack((black_binary, black_binary, black_binary))
+    cv2.fillPoly(warped_grays, np.int_([poly_points]), (0, 200, 0))
+        
+    unwarped_grays_fill = cc.unwarp( warped_grays.astype(np.int16) ).astype(np.uint8)
+    result = cv2.addWeighted(image, 1, unwarped_grays_fill, 0.4, 0)
+    
+    return result
 
 
 if __name__ == '__main__':
