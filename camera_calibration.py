@@ -8,17 +8,27 @@ import pickle
 # Parameters to select ROI as fraction of the image.
 imshape_used = (720, 1280, 3)
 
-top_lateral_diff = 579
+# These are sets of points, where for a certain height of the points used for 
+# transform, there is a corresponding lateral distance (so the points will be 
+# in the lanes for the sample images with straight lanes).
+sets_of_corresponding_points = [ [440, 608] ,
+                                 [500, 520] ]
+set_number_to_use = 0
+top_limit        = sets_of_corresponding_points[set_number_to_use][0]
+top_lateral_diff = sets_of_corresponding_points[set_number_to_use][1]
 
-pts_src = np.array([ [200,   720],
-                     [top_lateral_diff,   460], 
-                     [imshape_used[1]-top_lateral_diff,   460], 
-                     [1080,  720]],np.float32)
-        
-pts_dst = np.array([[200,  720],
-                    [200, 0],
-                    [1080,  0],
-                    [1080, 720] ],np.float32)
+bottom_limit = 720
+
+pts_src = np.array([ [200,                                  bottom_limit],
+                     [top_lateral_diff,                     top_limit], 
+                     [imshape_used[1]-top_lateral_diff,     top_limit], 
+                     [1080,                                 bottom_limit]], np.float32)
+
+distance_to_sides = 300        
+pts_dst = np.array([[distance_to_sides,                   720],
+                    [distance_to_sides,                     0],
+                    [imshape_used[1] - distance_to_sides,   0],
+                    [imshape_used[1] - distance_to_sides, 720] ],np.float32)
 
 nx = 9 # the number of inside corners in x
 ny = 6 # the number of inside corners in y
@@ -42,6 +52,7 @@ def sample_to_find_transformation_points():
         # undistort and unwarp
         image = cv2.undistort(image, mtx, dist, None, mtx)
         M = cv2.getPerspectiveTransform(pts_src, pts_dst)
+        Minv = cv2.getPerspectiveTransform(pts_dst, pts_src)
         warped = cv2.warpPerspective(image, M,  (imshape[1], imshape[0]), flags=cv2.INTER_LINEAR)
         
         image = cv2.circle(image, tuple(pts_src[0]), 10, color = [255,0,0], thickness = -1)
@@ -54,12 +65,17 @@ def sample_to_find_transformation_points():
         warped = cv2.circle(warped, tuple(pts_dst[2]), 10, color = [0,255,0], thickness = -1)
         warped = cv2.circle(warped, tuple(pts_dst[3]), 10, color = [255,255,0], thickness = -1)
         
-        f, (ax1, ax2) = plt.subplots(1,2, figsize=(12, 8))
+        unwarped = cv2.warpPerspective(warped, Minv, (imshape[1], imshape[0]), flags=cv2.INTER_LINEAR)
+        
+        
+        f, (ax1, ax2) = plt.subplots(2,2, figsize=(12, 8))
         f.tight_layout()
-        ax1.imshow(image)
-        ax1.set_title('Original Image')
-        ax2.imshow(warped)
-        ax2.set_title('Warped')
+        ax1[0].imshow(image)
+        ax1[0].set_title('Original Image')
+        ax1[1].imshow(warped)
+        ax1[1].set_title('Warped')
+        ax2[1].imshow(unwarped)
+        ax2[1].set_title('Un-Warped')
        
 def get_camera_matrices_and_perspective_transform():
     camera_dict = pickle.load( open('camera_calibration.p', mode='rb') )
@@ -80,6 +96,23 @@ def undistort_and_warp( image, mtx = None, dist = None, M = None):
     
     return warped        
     
+
+def get_camera_inverse_perspective_transform():
+    
+    Minv = cv2.getPerspectiveTransform(pts_dst, pts_src)
+    
+    return Minv
+
+def unwarp( warped, Minv = None):    
+    # Get camera matrices
+    if (Minv is None):
+        Minv = get_camera_inverse_perspective_transform()
+
+    unwarped = cv2.warpPerspective(warped, Minv, (warped.shape[1], warped.shape[0]), flags=cv2.INTER_LINEAR)
+    
+    return unwarped        
+    
+
 def calibrate_camera():
     
     

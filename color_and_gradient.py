@@ -83,7 +83,7 @@ def run_examples():
     # Read in an image, you can also try test1.jpg or test4.jpg
     image = mpimg.imread(r'.\course\test6.jpg') 
   
-    hls_binary = hls_select(image, thresh=(90, 255), print_layers = True)
+    hls_binary = hls_select(image, thresh=(90, 255), layer = 'S', plot_layers = False)
 #    hls_binary = hls_select(image, thresh=(90, 255))
     
     # Plot the result
@@ -100,7 +100,7 @@ def run_examples():
     #image = mpimg.imread('bridge_shadow.jpg')
 #    image = mpimg.imread('course\signs_vehicles_xygrad.png')
     image = mpimg.imread(r'.\course\test4.jpg')    
-    result = pipeline(image)
+    result = pipeline_filter_to_binary(image)
     
     # Plot the result
     f, (ax1, ax2) = plt.subplots(1,2, figsize=(11, 7))
@@ -253,8 +253,8 @@ def hls_select(img, thresh=(0, 255), layer = 'S', plot_layers = False):
 # Color and gradient pipeline
 
 # Edit this function to create your own pipeline.
-def pipeline(img, s_thresh = (120, 255), l_thresh = (210, 255) , plot_layers = False ):
-#    img = np.copy(img)
+def pipeline_filter_to_binary(img, s_thresh = (120, 255), l_thresh = (210, 255) , plot_layers = False ):
+    img = np.copy(img)
     
     binary_S = hls_select(img, s_thresh, 'S', plot_layers )
     binary_L = hls_select(img, l_thresh, 'L', False)
