@@ -60,7 +60,7 @@ def pipeline( image, counter = 0, plot_image = False):
     if(counter == 1):
         y, left_x, left_y, left_fit, right_fit = lanes.fit_lane_to_binary_image( warped_binary, plot_figure = plot_image )
     else:
-        y, left_x, left_y = lanes.fit_lane_to_binary_image_from_previos_fit( warped_binary, left_fit, right_fit, plot_figure = plot_image )
+        y, left_x, left_y = lanes.fit_lane_to_binary_image_from_previous_fit( warped_binary, left_fit, right_fit, plot_figure = plot_image )
   
     
     left_rad, right_rad = lanes.get_curvature(y, left_x, left_y)
@@ -123,7 +123,7 @@ import sys;sys.exit("Cricho exit")
 #
 #warped2 = cc.undistort_and_warp(image2)
 #warped_binary2 = cg.pipeline_filter_to_binary(warped2, s_thresh = (150, 255), l_thresh = (210, 255), plot_layers = False )
-#y, left_x, left_y = lanes.fit_lane_to_binary_image_from_previos_fit( warped_binary2, left_fit, right_fit, plot_figure = False )
+#y, left_x, left_y = lanes.fit_lane_to_binary_image_from_previous_fit( warped_binary2, left_fit, right_fit, plot_figure = False )
 ##y, left_x, left_y, left_fit, right_fit = lanes.fit_lane_to_binary_image( warped_binary2, plot_figure = False )
 #
 #left_rad, right_rad = lanes.get_curvature(y, left_x, left_y)
