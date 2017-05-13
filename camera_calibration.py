@@ -11,13 +11,16 @@ imshape_used = (720, 1280, 3)
 # These are sets of points, where for a certain height of the points used for 
 # transform, there is a corresponding lateral distance (so the points will be 
 # in the lanes for the sample images with straight lanes).
-sets_of_corresponding_points = [ [440, 608] ,
-                                 [500, 520] ]
-set_number_to_use = 1
+# The 3rd value is an estimation of the length in meters of the lane. 
+sets_of_corresponding_points = [ [440, 608, 30] ,
+                                 [500, 520, 20] ]
+set_number_to_use = 0
+
+
 top_limit        = sets_of_corresponding_points[set_number_to_use][0]
 top_lateral_diff = sets_of_corresponding_points[set_number_to_use][1]
 
-bottom_limit = 720
+bottom_limit = imshape_used[0]
 
 pts_src = np.array([ [200,                                  bottom_limit],
                      [top_lateral_diff,                     top_limit], 
@@ -25,10 +28,10 @@ pts_src = np.array([ [200,                                  bottom_limit],
                      [1080,                                 bottom_limit]], np.float32)
 
 distance_to_sides = 300        
-pts_dst = np.array([[distance_to_sides,                   720],
-                    [distance_to_sides,                     0],
-                    [imshape_used[1] - distance_to_sides,   0],
-                    [imshape_used[1] - distance_to_sides, 720] ],np.float32)
+pts_dst = np.array([[distance_to_sides,                   bottom_limit],
+                    [distance_to_sides,                              0],
+                    [imshape_used[1] - distance_to_sides,            0],
+                    [imshape_used[1] - distance_to_sides, bottom_limit] ],np.float32)
 
 nx = 9 # the number of inside corners in x
 ny = 6 # the number of inside corners in y
@@ -266,6 +269,5 @@ def corners_unwarp(img, nx, ny, mtx, dist):
     return warped, M
 
 if __name__ == '__main__':
-#    calibrate_camera()
-
+    calibrate_camera()
     sample_to_find_transformation_points()

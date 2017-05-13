@@ -4,13 +4,19 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+#import matplotlib.image as mpimg
 
 import camera_calibration as cc
 import color_and_gradient as cg
 
+image_width = cc.imshape_used[1]
+image_height = cc.imshape_used[0]
 
 def test_functions():
+    
+    # Globals when testing functions in order to explore them in my IDE.
+    global y, left_fit, right_fit
+    
     
     image_file = r'.\CarND-Advanced-Lane-Lines\test_images\test2.jpg'
     image = cv2.imread( image_file )
@@ -20,8 +26,8 @@ def test_functions():
     warped = cc.undistort_and_warp(image)
       
     warped_binary = cg.pipeline_filter_to_binary(warped, s_thresh = (150, 255), l_thresh = (210, 255), plot_layers = False )
-    y, left_x, left_y, left_fit, right_fit = fit_lane_to_binary_image( warped_binary )
-    left_rad, right_rad = get_curvature(y, left_fit, right_fit)
+    y, left_x, left_y, left_fit, right_fit, lane_width_pixels = fit_lane_to_binary_image( warped_binary )
+    left_rad, right_rad, off_center_m = get_curvature_and_off_center_distance(y, left_fit, right_fit, lane_width_pixels)
    
 
     f, (ax1, ax2) = plt.subplots(1,2, figsize=(12, 8))     
@@ -33,10 +39,10 @@ def test_functions():
     ax2.plot(left_y, y, color='yellow')
     ax2.set_xlim(0              , image.shape[1])
     ax2.set_ylim(image.shape[0] , 0)
-    ax2.set_title('1st pass. Curvature: left {: 4} m, right {: 4} m.'.format( int(left_rad), int(right_rad) ) )
+    ax2.set_title('1st pass. Curvature: left {: 4} m, right {: 4} m. Distance off-center {:.2} m.'.format( int(left_rad), int(right_rad), off_center_m ) )
     
     y, left_x, left_y, left_fit, right_fit = fit_lane_to_binary_image_from_previous_fit(warped_binary, left_fit, right_fit )
-    left_rad, right_rad = get_curvature(y, left_fit, right_fit)
+    left_rad, right_rad, off_center_m = get_curvature_and_off_center_distance(y, left_fit, right_fit, lane_width_pixels)
     
     f, (ax1, ax2) = plt.subplots(1,2, figsize=(12, 8))     
     f.tight_layout()
@@ -47,7 +53,7 @@ def test_functions():
     ax2.plot(left_y, y, color='yellow')
     ax2.set_xlim(0              , image.shape[1])
     ax2.set_ylim(image.shape[0] , 0)
-    ax2.set_title('2nd pass. Curvature: left {: 4} m, right {: 4} m.'.format( int(left_rad), int(right_rad) ) )
+    ax2.set_title('2nd pass. Curvature: left {: 4} m, right {: 4} m. Distance off-center {:.2} m.'.format( int(left_rad), int(right_rad), off_center_m ) )
     
     
 
@@ -68,6 +74,7 @@ def fit_lane_to_binary_image( binary_warped, plot_figure = False ):
     midpoint = np.int(histogram.shape[0]/2)
     leftx_base = np.argmax(histogram[:midpoint])
     rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+    lane_width_pixels = abs(leftx_base - rightx_base)
  
     # Choose the number of sliding windows
     nwindows = 9
@@ -145,11 +152,11 @@ def fit_lane_to_binary_image( binary_warped, plot_figure = False ):
         plt.imshow(out_img)
         plt.plot(left_fitx, ploty, color='yellow')
         plt.plot(right_fitx, ploty, color='yellow')
-        plt.xlim(0, 1280)
-        plt.ylim(720, 0)
+        plt.xlim(0, image_width)
+        plt.ylim(image_height, 0)
         plt.show()
     
-    return ploty, left_fitx, right_fitx, left_fit, right_fit
+    return ploty, left_fitx, right_fitx, left_fit, right_fit, lane_width_pixels
     
 
 # Function to fit a second order polynomial to the 2 lanes from a bird-view 
@@ -217,48 +224,68 @@ def fit_lane_to_binary_image_from_previous_fit(binary_warped, left_fit, right_fi
         plt.imshow(result)
         plt.plot( left_fitx, ploty, color='yellow')
         plt.plot(right_fitx, ploty, color='yellow')
-        plt.xlim(0, 1280)
-        plt.ylim(720, 0)
+        plt.xlim(0, image_width)
+        plt.ylim(image_height, 0)
 
     return ploty, left_fitx, right_fitx, left_fit, right_fit
 
 
 # Get the curvature radius from the coefficients obtained from fitting the lane
 # image to second order polynomials.
-def get_curvature(ploty, left_fit, right_fit, plot_figure = False):
+def get_curvature_and_off_center_distance(ploty, left_fit, right_fit, lane_width_pixels = 700, plot_figure = False):
    
     left_fitx  =  left_fit[0]*ploty**2 +  left_fit[1]*ploty + left_fit[2]
     right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
     
     # Define y-value where we want radius of curvature
     # I'll choose the maximum y-value, corresponding to the bottom of the image
-    y_eval = np.max(ploty)    
+    #y_eval = np.max(ploty)    
+    y_eval = ploty[-100:] # last 100 points    
 
     # Define conversions in x and y from pixels space to meters
-    # They are approximately as the values suggested in the lesson (30 meters 
-    # of lane seen in the bird view, even though this is very difficult to 
-    # judge), and 3.7 meters wide (this is regulation, so it is more reliable).
-    ym_per_pix = 30/720  # meters per pixel in y dimension
-    xm_per_pix = 3.7/700 # meters per pixel in x dimension
+    # For the y axis a value estimated in the module camera_calibration is 
+    # used. Since more than a set of points is used for the image 
+    # transformation, it is parametrized in this way, to have a pixel to meters
+    # convesion coherent with the transformation. 
+    # For the x axis, assuming 3.7 meters wide (from the regulation), and with
+    # the lane_width_pixels passed to the function, the meters
+    # per pixel can be found.
+    ym_per_pix = cc.sets_of_corresponding_points[cc.set_number_to_use][2] / image_height  # meters per pixel in y dimension
+    xm_per_pix = 3.7 / lane_width_pixels # meters per pixel in x dimension
     
+
+    # Gel the distance off-center
+    lanes_middle_pixel = (right_fitx[-1] + left_fitx[-1]) / 2
+    car_central_pixel = image_width / 2
+    # Pixels between the center of the car and the center of the lane. If 
+    # positive, the car is on the right side of the lane.
+    off_center_pixels =  car_central_pixel - lanes_middle_pixel
+    off_center_m = off_center_pixels * xm_per_pix
+        
     # Fit new polynomials to x,y in world space
     left_fit_cr  = np.polyfit(ploty * ym_per_pix,  left_fitx * xm_per_pix, 2)
     right_fit_cr = np.polyfit(ploty * ym_per_pix, right_fitx * xm_per_pix, 2)
-    # Calculate the new radii of curvature
+    # Calculate the new radii of curvature for the 100 points nearest to the 
+    # bottom of the image.
     left_curverad_m  = ((1 + (2* left_fit_cr[0]*y_eval*ym_per_pix +  left_fit_cr[1])**2)**1.5) / np.absolute(2* left_fit_cr[0])
     right_curverad_m = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
 
+    left_curverad_m = np.mean(left_curverad_m)
+    right_curverad_m = np.mean(right_curverad_m)
+
+
     if plot_figure:
+       
         # Plot up the fake data
         plt.figure()
         plt.plot(left_fitx, ploty, color='red', linewidth=3)
         plt.plot(right_fitx, ploty, color='blue', linewidth=3)
-        plt.xlim(0, 1280)
-        plt.ylim(0, 720)
+        plt.xlim(0, image_width)
+        plt.ylim(0, image_height)
         plt.gca().invert_yaxis() # to visualize as we do the images
-        plt.title('Curvature: left {: 4} m, right {: 4} m.'.format( int(left_curverad_m), int(right_curverad_m) ) )
+        plt.title('Curvature: left {: 4} m, right {: 4} m. Distance off-center {:.2} m.'.format( int(left_curverad_m), int(right_curverad_m), off_center_m ) )
         
-    return left_curverad_m, right_curverad_m
+    return left_curverad_m, right_curverad_m, off_center_m
     
 
 

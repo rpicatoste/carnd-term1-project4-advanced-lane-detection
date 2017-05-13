@@ -56,16 +56,27 @@ def pipeline( image, counter_in = 0, plot_image = False):
     
     global counter, left_fit_filt, right_fit_filt, left_rad_filt, right_rad_filt
     
+    lane_width_pixels = 700 # Default value
+    
     # undistort and unwarp
     warped = cc.undistort_and_warp(image)
-    warped_binary = cg.pipeline_filter_to_binary(warped, s_thresh = threshold_s, l_thresh = threshold_l, plot_layers = plot_image )
+    warped_binary = cg.pipeline_filter_to_binary(warped, 
+                                                 s_thresh = threshold_s, 
+                                                 l_thresh = threshold_l, 
+                                                 plot_layers = plot_image )
     
     if(counter_in == 1):
-        y, left_x, left_y, left_fit, right_fit = lanes.fit_lane_to_binary_image( warped_binary, plot_figure = plot_image )
+        y, left_x, left_y, left_fit, right_fit, lane_width_pixels = \
+                                        lanes.fit_lane_to_binary_image(warped_binary, 
+                                                                       plot_figure = plot_image )
         if y is None:
             counter = 0
     else:
-        y, left_x, left_y, left_fit, right_fit = lanes.fit_lane_to_binary_image_from_previous_fit( warped_binary, left_fit_filt.average, right_fit_filt.average, plot_figure = plot_image )
+        y, left_x, left_y, left_fit, right_fit = \
+                                        lanes.fit_lane_to_binary_image_from_previous_fit(warped_binary,
+                                                                                         left_fit_filt.average,
+                                                                                         right_fit_filt.average, 
+                                                                                         plot_figure = plot_image )
     
     if y is not None :
         left_fit_filt.next_val( left_fit )
@@ -74,28 +85,34 @@ def pipeline( image, counter_in = 0, plot_image = False):
         print('Liada con x!')
         return image, None, None
     
-    left_rad, right_rad = lanes.get_curvature(y, left_fit_filt.average, right_fit_filt.average)
+    left_rad_m, right_rad_m, off_center_m = lanes.get_curvature_and_off_center_distance(y, 
+                                                                                        left_fit_filt.average,
+                                                                                        right_fit_filt.average,
+                                                                                        lane_width_pixels)
     
-    left_rad_filt.next_val( left_rad )
-    right_rad_filt.next_val( right_rad )
-#    print(' {: 4}left lane rad instantaneous: {: 6}m, average{: 6}m'.format(left_rad_filt.counter, int(left_rad), int(left_rad_filt.average) ) , end = '\r')
-    
+    left_rad_filt.next_val( left_rad_m )
+    right_rad_filt.next_val( right_rad_m )
             
     result = lanes.fill_found_lanes_in_original(image, y,  left_fit_filt.average, right_fit_filt.average)
     
-    cv2.putText( result, '{: 3}, radious left{: 6} m, right{: 6} m'.format(counter_in, int(left_rad_filt.average), int(right_rad_filt.average) ), 
-                (120,140), fontFace = cv2.FONT_HERSHEY_SIMPLEX, fontScale = 1, color=(0,0,0), thickness = 2 )
+    cv2.putText(result, 
+                '{: 4}, radious left{: 6} m, right{: 6} m'.format(counter_in, 
+                                                                  int(left_rad_filt.average), 
+                                                                  int(right_rad_filt.average) ), 
+                (120,140), 
+                fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
+                fontScale = 1, 
+                color=(0,0,0), 
+                thickness = 2 )
     
     if( plot_image ):    
         f, (ax1, ax2) = plt.subplots(1,2, figsize=(12, 8))
         f.tight_layout()
         ax1.imshow(result)
-#        ax1.set_title(image_file)
         ax2.imshow(warped_binary, cmap = 'gray')
-        ax2.set_title('left_rad ' + str(left_rad) + ', right_rad ' + str(right_rad) )
-    
-    return result, left_rad, right_rad
-  
+        ax2.set_title('Curvature: left {: 4} m, right {: 4} m. Distance off-center {:.2} m. Distance off-center {:.2} m.'.format( int(left_rad_m), int(right_rad_m), off_center_m ) )
+        
+    return result, left_rad_m, right_rad_m
       
 
 images = glob.glob(r'.\CarND-Advanced-Lane-Lines\test_images\test*.jpg')
@@ -107,43 +124,14 @@ threshold_s = (150, 255)
 threshold_l = (210, 255)
 
 #for image_file in images:
-#    
 #    left_fit_filt.restart()
 #    right_fit_filt.restart()
 #    image = cv2.imread( image_file )
 #    image = cv2.cvtColor( image, cv2.COLOR_BGR2RGB )
 #    result = pipeline_image(image, True, plot_figure = True)
-#
+##
 #import sys;sys.exit("Cricho exit")
 
-#%% Test one after another
-
-## Imagen problematica
-##image_file1 = r'.\CarND-Advanced-Lane-Lines\test_images\test5_prev.jpg'
-##image_file2 = r'.\CarND-Advanced-Lane-Lines\test_images\test5.jpg'
-#
-#image_file1 = r'.\CarND-Advanced-Lane-Lines\test_images\test6.jpg'
-#image_file2 = r'.\CarND-Advanced-Lane-Lines\test_images\test6.jpg'
-#
-#image1 = cv2.imread( image_file1 )
-#image1 = cv2.cvtColor( image1, cv2.COLOR_BGR2RGB )
-#    
-#image2 = cv2.imread( image_file2 )
-#image2 = cv2.cvtColor( image2, cv2.COLOR_BGR2RGB )
-#
-## undistort and unwarp
-#warped1 = cc.undistort_and_warp(image1)
-#warped_binary1 = cg.pipeline_filter_to_binary(warped1, s_thresh = (150, 255), l_thresh = (210, 255), plot_layers = False )
-#y, left_x, left_y, left_fit, right_fit = lanes.fit_lane_to_binary_image( warped_binary1, plot_figure = False )
-#
-#warped2 = cc.undistort_and_warp(image2)
-#warped_binary2 = cg.pipeline_filter_to_binary(warped2, s_thresh = (150, 255), l_thresh = (210, 255), plot_layers = False )
-#y, left_x, left_y = lanes.fit_lane_to_binary_image_from_previous_fit( warped_binary2, left_fit, right_fit, plot_figure = False )
-##y, left_x, left_y, left_fit, right_fit = lanes.fit_lane_to_binary_image( warped_binary2, plot_figure = False )
-#
-#left_rad, right_rad = lanes.get_curvature(y, left_fit, right_fit)
-#
-#
 #%% Videoooo
 
 # Import everything needed to edit/save/watch video clips
@@ -158,7 +146,7 @@ if not os.path.exists(directory):
 # next video
 videos = [ 'project_video', 'challenge_video', 'harder_challenge_video' ]
 videos = [ 'recorte' ]
-videos = [ 'challenge_video' ]
+videos = [ 'project_video' ]
 project_video_result_file = 'results\\'
 
 
