@@ -22,13 +22,13 @@ top_lateral_diff = sets_of_corresponding_points[set_number_to_use][1]
 
 bottom_limit = imshape_used[0]
 
-pts_src = np.array([ [200,                                  bottom_limit],
-                     [top_lateral_diff,                     top_limit], 
-                     [imshape_used[1]-top_lateral_diff,     top_limit], 
-                     [1080,                                 bottom_limit]], np.float32)
+points_source = np.array([ [200,                                  bottom_limit],
+                           [top_lateral_diff,                     top_limit], 
+                           [imshape_used[1]-top_lateral_diff,     top_limit], 
+                           [1080,                                 bottom_limit]], np.float32)
 
 distance_to_sides = 300        
-pts_dst = np.array([[distance_to_sides,                   bottom_limit],
+points_dest = np.array([[distance_to_sides,                   bottom_limit],
                     [distance_to_sides,                              0],
                     [imshape_used[1] - distance_to_sides,            0],
                     [imshape_used[1] - distance_to_sides, bottom_limit] ],np.float32)
@@ -54,19 +54,19 @@ def sample_to_find_transformation_points():
             
         # undistort and unwarp
         image = cv2.undistort(image, mtx, dist, None, mtx)
-        M = cv2.getPerspectiveTransform(pts_src, pts_dst)
-        Minv = cv2.getPerspectiveTransform(pts_dst, pts_src)
+        M = cv2.getPerspectiveTransform(points_source, points_dest)
+        Minv = cv2.getPerspectiveTransform(points_dest, points_source)
         warped = cv2.warpPerspective(image, M,  (imshape[1], imshape[0]), flags=cv2.INTER_LINEAR)
         
-        image = cv2.circle(image, tuple(pts_src[0]), 10, color = [255,0,0], thickness = -1)
-        image = cv2.circle(image, tuple(pts_src[1]), 10, color = [0,0,255], thickness = -1)
-        image = cv2.circle(image, tuple(pts_src[2]), 10, color = [0,255,0], thickness = -1)
-        image = cv2.circle(image, tuple(pts_src[3]), 10, color = [255,255,0], thickness = -1)
+        image = cv2.circle(image, tuple(points_source[0]), 10, color = [255,0,0], thickness = -1)
+        image = cv2.circle(image, tuple(points_source[1]), 10, color = [0,0,255], thickness = -1)
+        image = cv2.circle(image, tuple(points_source[2]), 10, color = [0,255,0], thickness = -1)
+        image = cv2.circle(image, tuple(points_source[3]), 10, color = [255,255,0], thickness = -1)
         
-        warped = cv2.circle(warped, tuple(pts_dst[0]), 10, color = [255,0,0], thickness = -1)
-        warped = cv2.circle(warped, tuple(pts_dst[1]), 10, color = [0,0,255], thickness = -1)
-        warped = cv2.circle(warped, tuple(pts_dst[2]), 10, color = [0,255,0], thickness = -1)
-        warped = cv2.circle(warped, tuple(pts_dst[3]), 10, color = [255,255,0], thickness = -1)
+        warped = cv2.circle(warped, tuple(points_dest[0]), 10, color = [255,0,0], thickness = -1)
+        warped = cv2.circle(warped, tuple(points_dest[1]), 10, color = [0,0,255], thickness = -1)
+        warped = cv2.circle(warped, tuple(points_dest[2]), 10, color = [0,255,0], thickness = -1)
+        warped = cv2.circle(warped, tuple(points_dest[3]), 10, color = [255,255,0], thickness = -1)
         
         unwarped = cv2.warpPerspective(warped, Minv, (imshape[1], imshape[0]), flags=cv2.INTER_LINEAR)
         
@@ -84,7 +84,7 @@ def get_camera_matrices_and_perspective_transform():
     camera_dict = pickle.load( open('camera_calibration.p', mode='rb') )
     mtx = camera_dict["mtx"] 
     dist = camera_dict["dist"] 
-    M = cv2.getPerspectiveTransform(pts_src, pts_dst)
+    M = cv2.getPerspectiveTransform(points_source, points_dest)
     
     return mtx, dist, M
     
@@ -102,7 +102,7 @@ def undistort_and_warp( image, mtx = None, dist = None, M = None):
 
 def get_camera_inverse_perspective_transform():
     
-    Minv = cv2.getPerspectiveTransform(pts_dst, pts_src)
+    Minv = cv2.getPerspectiveTransform(points_dest, points_source)
     
     return Minv
 
@@ -267,5 +267,5 @@ def corners_unwarp(img, nx, ny, mtx, dist):
     return warped, M
 
 if __name__ == '__main__':
-    calibrate_camera()
+#    calibrate_camera()
     sample_to_find_transformation_points()
