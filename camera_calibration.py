@@ -13,7 +13,7 @@ imshape_used = (720, 1280, 3)
 # in the lanes for the sample images with straight lanes).
 sets_of_corresponding_points = [ [440, 608] ,
                                  [500, 520] ]
-set_number_to_use = 0
+set_number_to_use = 1
 top_limit        = sets_of_corresponding_points[set_number_to_use][0]
 top_lateral_diff = sets_of_corresponding_points[set_number_to_use][1]
 
