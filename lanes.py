@@ -18,7 +18,7 @@ def test_functions():
     global y, left_fit, right_fit
     
     
-    image_file = r'.\CarND-Advanced-Lane-Lines\test_images\test2.jpg'
+    image_file = r'.\test_images\test2.jpg'
     image = cv2.imread( image_file )
     image = cv2.cvtColor( image, cv2.COLOR_BGR2RGB )
     

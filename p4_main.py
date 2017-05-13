@@ -17,7 +17,7 @@ import glob
 #mtx = camera_dict["mtx"] 
 #dist = camera_dict["dist"] 
 #
-#fname = '.\CarND-Advanced-Lane-Lines\camera_cal\calibration3.jpg'
+#fname = '.\camera_cal\calibration3.jpg'
 #img = cv2.imread(fname)
 #
 #top_down, perspective_M = cc.corners_unwarp(img, cc.nx, cc.ny, mtx, dist)
@@ -96,15 +96,22 @@ def pipeline( image, counter_in = 0, plot_image = False):
     result = lanes.fill_found_lanes_in_original(image, y,  left_fit_filt.average, right_fit_filt.average)
     
     cv2.putText(result, 
-                '{: 4}, radious left{: 6} m, right{: 6} m'.format(counter_in, 
-                                                                  int(left_rad_filt.average), 
-                                                                  int(right_rad_filt.average) ), 
-                (120,140), 
+                'Radious left{: 6} m, right{: 6} m'.format( int(left_rad_filt.average), 
+                                                            int(right_rad_filt.average) ), 
+                (120,60), 
                 fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
                 fontScale = 1, 
                 color=(0,0,0), 
                 thickness = 2 )
-    
+                
+    cv2.putText(result, 
+                'Distance off-center {:.2} m.'.format(off_center_m), 
+                (120,100), 
+                fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
+                fontScale = 1, 
+                color=(0,0,0), 
+                thickness = 2 ) 
+                
     if( plot_image ):    
         f, (ax1, ax2) = plt.subplots(1,2, figsize=(12, 8))
         f.tight_layout()
@@ -115,10 +122,10 @@ def pipeline( image, counter_in = 0, plot_image = False):
     return result, left_rad_m, right_rad_m
       
 
-images = glob.glob(r'.\CarND-Advanced-Lane-Lines\test_images\test*.jpg')
+images = glob.glob(r'.\test_images\test*.jpg')
 
-images.append( r'.\CarND-Advanced-Lane-Lines\test_images\straight_lines1.jpg' )  
-images.append( r'.\CarND-Advanced-Lane-Lines\test_images\straight_lines2.jpg' )  
+images.append( r'.\test_images\straight_lines1.jpg' )  
+images.append( r'.\test_images\straight_lines2.jpg' )  
 
 threshold_s = (150, 255)
 threshold_l = (210, 255)
@@ -129,7 +136,7 @@ threshold_l = (210, 255)
 #    image = cv2.imread( image_file )
 #    image = cv2.cvtColor( image, cv2.COLOR_BGR2RGB )
 #    result = pipeline_image(image, True, plot_figure = True)
-##
+#
 #import sys;sys.exit("Cricho exit")
 
 #%% Videoooo

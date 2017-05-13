@@ -1,4 +1,4 @@
-#%%
+
 import numpy as np
 import cv2
 import glob
@@ -43,8 +43,8 @@ def sample_to_find_transformation_points():
     mtx = camera_dict["mtx"] 
     dist = camera_dict["dist"] 
 
-    image_files = [r'.\CarND-Advanced-Lane-Lines\test_images\straight_lines1.jpg',
-                  r'.\CarND-Advanced-Lane-Lines\test_images\straight_lines2.jpg']
+    image_files = [r'.\test_images\straight_lines1.jpg',
+                  r'.\test_images\straight_lines2.jpg']
     
     for image_file in image_files:
         image = cv2.imread( image_file )
@@ -128,7 +128,7 @@ def calibrate_camera():
     imgpoints = [] # 2d points in image plane.
     
     # Make a list of calibration images
-    images = glob.glob('CarND-Advanced-Lane-Lines\camera_cal\calibration*.jpg')
+    images = glob.glob('camera_cal\calibration*.jpg')
 
     # Step through the list and search for chessboard corners
     for idx, fname in enumerate(images):
@@ -159,7 +159,7 @@ def calibrate_camera():
 
     # Test undistortion on an image. From the camera calibration folder, the one 
     # that looks more distorted is the 1.
-    img = cv2.imread('CarND-Advanced-Lane-Lines\camera_cal\calibration1.jpg')
+    img = cv2.imread('camera_cal\calibration1.jpg')
     img_size = (img.shape[1], img.shape[0])
     
     dst = cv2.undistort(img, mtx, dist, None, mtx)
@@ -186,7 +186,7 @@ def calibrate_camera():
     mtx = camera_dict["mtx"] 
     dist = camera_dict["dist"] 
     
-    fname = '.\CarND-Advanced-Lane-Lines\camera_cal\calibration3.jpg'
+    fname = '.\camera_cal\calibration3.jpg'
     img = cv2.imread(fname)
     img_size = (img.shape[1], img.shape[0])
     
@@ -199,8 +199,6 @@ def calibrate_camera():
     ax2.imshow(top_down)
     ax2.set_title('Undistorted and Warped Image')
     plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
-
-
 
 
 def corners_unwarp(img, nx, ny, mtx, dist):
