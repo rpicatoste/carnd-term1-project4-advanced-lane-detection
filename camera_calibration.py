@@ -46,7 +46,7 @@ def sample_to_find_transformation_points():
     image_files = [r'.\test_images\straight_lines1.jpg',
                   r'.\test_images\straight_lines2.jpg']
     
-    for image_file in image_files:
+    for ii, image_file in enumerate(image_files):
         image = cv2.imread( image_file )
         image = cv2.cvtColor( image, cv2.COLOR_BGR2RGB )
         
@@ -70,15 +70,18 @@ def sample_to_find_transformation_points():
         
         unwarped = cv2.warpPerspective(warped, Minv, (imshape[1], imshape[0]), flags=cv2.INTER_LINEAR)
         
+            
+        fig = plt.figure(dpi=60, figsize=(25, 10))
+        ax1 = fig.add_subplot(1,2,1)
+        ax2 = fig.add_subplot(1,2,2)
+ 
+        ax1.imshow(image)
+        ax1.set_title('Original Image')
+        ax2.imshow(warped)
+        ax2.set_title('Warped')
         
-        f, (ax1, ax2) = plt.subplots(2,2, figsize=(12, 8))
-        f.tight_layout()
-        ax1[0].imshow(image)
-        ax1[0].set_title('Original Image')
-        ax1[1].imshow(warped)
-        ax1[1].set_title('Warped')
-        ax2[1].imshow(unwarped)
-        ax2[1].set_title('Un-Warped')
+        fig.tight_layout()
+        fig.savefig(r'.\output_images\example_image_transformation '+str(set_number_to_use+1)+'-'+str(ii+1)+'.png')
        
 def get_camera_matrices_and_perspective_transform():
     camera_dict = pickle.load( open('camera_calibration.p', mode='rb') )
@@ -118,7 +121,6 @@ def unwarp( warped, Minv = None):
 
 def calibrate_camera():
     
-    
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
     objp = np.zeros((ny*nx,3), np.float32)
     objp[:,:2] = np.mgrid[0:nx, 0:ny].T.reshape(-1,2)
@@ -145,8 +147,8 @@ def calibrate_camera():
     
             # Draw and display the corners
             cv2.drawChessboardCorners(img, (nx,ny), corners, ret)
-            #write_name = 'corners_found'+str(idx)+'.jpg'
-            #cv2.imwrite(write_name, img)
+            write_name = '.\output_images\corners_found'+str(idx)+'.jpg'
+            cv2.imwrite(write_name, img)
             cv2.imshow('img', img)
             cv2.waitKey(500)
     
@@ -156,14 +158,13 @@ def calibrate_camera():
     # Do camera calibration given object points and image points
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, img_size,None,None)
 
-
     # Test undistortion on an image. From the camera calibration folder, the one 
     # that looks more distorted is the 1.
     img = cv2.imread('camera_cal\calibration1.jpg')
     img_size = (img.shape[1], img.shape[0])
     
     dst = cv2.undistort(img, mtx, dist, None, mtx)
-    cv2.imwrite('camera_calibration_test_undist.jpg',dst)
+    cv2.imwrite('.\output_images\camera_calibration_test_undist.jpg',dst)
     
     # Save the camera calibration result for later use (we won't worry about rvecs / tvecs)
     camera_dict = {}
@@ -172,13 +173,17 @@ def calibrate_camera():
     pickle.dump( camera_dict, open( "camera_calibration.p", "wb" ) )
     #dst = cv2.cvtColor(dst, cv2.COLOR_BGR2RGB)
     # Visualize undistortion
-    f, (ax1, ax2) = plt.subplots(2, figsize=(10,13))
+    fig = plt.figure(dpi=50, figsize=(10,13))
+    ax1 = fig.add_subplot(2,1,1)
+    ax2 = fig.add_subplot(2,1,2)
+    
     ax1.imshow(img)
     ax1.set_title('Original Image', fontsize=20)
     ax2.imshow(dst)
     ax2.set_title('Undistorted Image', fontsize=20)
+    fig.tight_layout()
     
-
+    fig.savefig(r'.\output_images\example_undistort.png')
 
     # Undistort and transform
     camera_dict = pickle.load( open('camera_calibration.p', mode='rb') )
@@ -189,16 +194,21 @@ def calibrate_camera():
     fname = '.\camera_cal\calibration3.jpg'
     img = cv2.imread(fname)
     img_size = (img.shape[1], img.shape[0])
-    
-    
+        
     top_down, perspective_M = corners_unwarp(img, nx, ny, mtx, dist)
-    f, (ax1, ax2) = plt.subplots(1,2, figsize=(12, 7))
-    f.tight_layout()
+    
+    
+    fig = plt.figure(dpi=60, figsize=(25, 10))
+    ax1 = fig.add_subplot(1,2,1)
+    ax2 = fig.add_subplot(1,2,2)
+    
     ax1.imshow(img)
     ax1.set_title('Original Image')
     ax2.imshow(top_down)
     ax2.set_title('Undistorted and Warped Image')
-    plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
+    fig.tight_layout()
+    
+    fig.savefig(r'.\output_images\example_undistort_and_unwarp.png')
 
 
 def corners_unwarp(img, nx, ny, mtx, dist):
@@ -267,5 +277,5 @@ def corners_unwarp(img, nx, ny, mtx, dist):
     return warped, M
 
 if __name__ == '__main__':
-#    calibrate_camera()
+    calibrate_camera()
     sample_to_find_transformation_points()

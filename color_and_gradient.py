@@ -5,9 +5,6 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-import pickle
-
-
 
 def run_examples():
     
@@ -32,7 +29,6 @@ def run_examples():
     # Run the function
     mag_binary = mag_thresh(image, sobel_kernel=3, mag_thresh=(30, 100))
     # Plot the result
-    #f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
     f, (ax1, ax2) = plt.subplots(1,2, figsize=(11, 7))
     f.tight_layout()
     ax1.imshow(image)
@@ -248,11 +244,7 @@ def hls_select(img, thresh=(0, 255), layer = 'S', plot_layers = False):
     
     return sbinary
   
-
-
 # Color and gradient pipeline
-
-# Edit this function to create your own pipeline.
 def pipeline_filter_to_binary(img, s_thresh = (120, 255), l_thresh = (210, 255) , plot_layers = False ):
     img = np.copy(img)
     
