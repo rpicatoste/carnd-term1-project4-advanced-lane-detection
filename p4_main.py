@@ -95,29 +95,37 @@ def pipeline( image, counter_in = 0, plot_image = False):
             
     result = lanes.fill_found_lanes_in_original(image, y,  left_fit_filt.average, right_fit_filt.average)
     
-    cv2.putText(result, 
-                'Radious left{: 6} m, right{: 6} m'.format( int(left_rad_filt.average), 
-                                                            int(right_rad_filt.average) ), 
-                (120,60), 
-                fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
-                fontScale = 1, 
-                color=(0,0,0), 
-                thickness = 2 )
                 
-    cv2.putText(result, 
-                'Distance off-center {:.2} m.'.format(off_center_m), 
-                (120,100), 
-                fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
-                fontScale = 1, 
-                color=(0,0,0), 
-                thickness = 2 ) 
-                
-    if( plot_image ):    
-        f, (ax1, ax2) = plt.subplots(1,2, figsize=(12, 8))
-        f.tight_layout()
+    if( plot_image ):   
+        
+        cv2.putText(result, 
+                    'Radious left{: 6} m, right{: 6} m'.format( int(left_rad_filt.average), 
+                                                                int(right_rad_filt.average) ), 
+                    (120,60), 
+                    fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
+                    fontScale = 1, 
+                    color=(0,0,0), 
+                    thickness = 2 )
+                    
+        cv2.putText(result, 
+                    'Distance off-center {:.2} m.'.format(off_center_m), 
+                    (120,100), 
+                    fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
+                    fontScale = 1, 
+                    color=(0,0,0), 
+                    thickness = 2 ) 
+
+        fig = plt.figure(dpi=60, figsize=(25, 10))
+        ax1 = fig.add_subplot(1,2,1)
+        ax2 = fig.add_subplot(1,2,2)
+        fig.tight_layout()
+ 
         ax1.imshow(result)
+        ax1.set_title('Result')
         ax2.imshow(warped_binary, cmap = 'gray')
-        ax2.set_title('Curvature: left {: 4} m, right {: 4} m. Distance off-center {:.2} m. Distance off-center {:.2} m.'.format( int(left_rad_m), int(right_rad_m), off_center_m ) )
+        ax2.set_title('Warped')
+                               
+        fig.savefig(r'.\output_images\full_pipeline_example.png')
         
     return result, left_rad_m, right_rad_m
       
@@ -130,14 +138,14 @@ images.append( r'.\test_images\straight_lines2.jpg' )
 threshold_s = (150, 255)
 threshold_l = (210, 255)
 
-#for image_file in images:
-#    left_fit_filt.restart()
-#    right_fit_filt.restart()
-#    image = cv2.imread( image_file )
-#    image = cv2.cvtColor( image, cv2.COLOR_BGR2RGB )
-#    result = pipeline_image(image, True, plot_figure = True)
-#
-#import sys;sys.exit("Cricho exit")
+for image_file in images:
+    left_fit_filt.restart()
+    right_fit_filt.restart()
+    image = cv2.imread( image_file )
+    image = cv2.cvtColor( image, cv2.COLOR_BGR2RGB )
+    result = pipeline_image(image, True, plot_figure = True)
+
+import sys;sys.exit("Cricho exit")
 
 #%% Videoooo
 
