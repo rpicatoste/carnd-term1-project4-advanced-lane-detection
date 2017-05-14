@@ -38,7 +38,7 @@ In the camera calibration python module I put the code to calibrate the camera f
     calibrate_camera()
     sample_to_find_transformation_points()   
  
-This is a very convenient way to have modules that can be imported and an automatic testing in case that it is required.
+This is a very convenient way to have modules that can be imported and be automatically tested in case that it is required.
 
 The camera calibration uses the images provided with the project. Those images are read and the points of the chess board found with the functions presented in the lessons. The images are stored in the output_images folder, and below an example is shown:
 
@@ -75,7 +75,7 @@ The distortion and the transformation of images was described in the previous po
 
 In the module `color_and_gradient.py`, all the functions related to color and gradient transformations are implemented. The module can be run independently, like with the camera module, and all the test performed while looking for the best combination of transforms to find the lane lines will be run; or it can also be included as module, giving access to all those functions.
 
-The pipeline that seemed to work better to find the lane lines was a combination of thresholds in the saturation and lightness. It allowed to find both the white and the yellow lines. Below the pipeline found using this combination is used in an example.
+The pipeline that seemed to work better to find the lane lines was a combination of thresholds in the saturation and lightness of the HLS color space. It allowed to find both the white and the yellow lines. Below the pipeline found using this combination is used in an example.
 
 ![alt text]('./output_images/color_pipeline_example.png')
  
